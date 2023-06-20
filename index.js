@@ -36,6 +36,29 @@ function isArrayInArray(arr, item){
   return contains;
 }
 
+function indexOfArrayInArray(arr, item) {
+  for (let i = 0; i < arr.length; i++) {
+    let compared = arr[i];
+    if (compared.length != item.length) {
+      continue;
+    }
+
+    let equal = true;
+    for (let j = 0; j < item.length; j++) {
+      if (compared[j] !== item[j]) {
+        equal = false;
+        break;
+      }
+    }
+
+    if (equal) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
 // const defaultDeckType = "shuffled";
 const defaultDeckType = "seeded";
 // const defaultDeckType = "unshuffled";
@@ -165,6 +188,8 @@ class Fish {
       this.table[dealingIdx % 6].hand.push(deck.dealCard());
       dealingIdx++;
     }
+
+    this.halfSuitStatus = [0, 0, 0, 0, 0, 0, 0, 0, 0];
   }
 
   declare(declarer, cardList, playerList) {
@@ -193,6 +218,7 @@ class Fish {
     // Check if half suit is good.
     if (isArrayInArray(HALFSUITS, cardList)) {
       console.log("Good half suit");
+      this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = declarer.team;
     } else {
       console.log("BAD hald suit!!!");
     }
