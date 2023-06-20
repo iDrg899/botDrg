@@ -70,6 +70,31 @@ class Player {
     this.username = username;
     this.hand = [];
   }
+
+  remove(card) {
+    let handSize = this.hand.length;
+    this.hand = this.hand.filter(c => !c.isEqualTo(card));
+
+    if (this.hand.length < handSize) {
+      return "successful removal";
+    } else {
+      return "failed removal";
+    }
+  }
+
+  getRandomCard() {
+    return this.hand[Math.floor(Math.random() * (this.hand.length))];
+  }
+
+  hasCard(card) {
+    for (let i = 0; i < this.hand.length; i++) {
+      if (card.isEqualTo(this.hand[i])) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
 
 /* Card class */
@@ -109,6 +134,18 @@ class Card {
       }
     }
     console.log("There is a card that no player owns.")
+    return -1;
+  }
+
+  getHalfSuitIndex() {
+    for (let i = 0; i < HALFSUITS.length; i++) {
+      for (let j = 0; j < HALFSUITS[i].length; j++) {
+        if (this.isEqualTo(HALFSUITS[i][j])) {
+          return i;
+        }
+      }
+    }
+
     return -1;
   }
 }
@@ -201,6 +238,13 @@ class Fish {
   }
 
   declare(declarer, cardList, playerList) {
+    for (let i = 0; i < playerList.length; i++) {
+      if (this.getTeamOf(declarer) !== this.getTeamOf(playerList[i])) {
+        console.log("Man, you can't tell them what they have.");
+        return;
+      }
+    }
+
     let copy = [...cardList];
     // Sort cardList.
     for (let i = 0; i < cardList.length; i++) {
@@ -239,6 +283,10 @@ class Fish {
       }
     }
 
+    for (let i = 0; i < cardList.length; i++) {
+      cardList[i].getOwnerFrom(this.table).remove(cardList[i]);
+    }
+
     if (badGuess) {
       if (sameTeam) {
         this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = -1;
@@ -249,19 +297,66 @@ class Fish {
       this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = this.getTeamOf(declarer);
     }
   }
+
+  burn(giver, recipient) {
+    let card = giver.getRandomCard();
+    giver.remove(card);
+    recipient.hand.push(card);
+  }
+
+  ask(asker, asked, card) {
+    if (this.getTeamOf(asker) === this.getTeamOf(asked)) {
+      console.log("Can't ask team member.");
+      // TODO: tell the kids that they can't ask their own team member
+      return;
+    }
+
+    let legal = false;
+    
+    for (let i = 0; i < asker.hand.length; i++) {
+      if (asker.hand[i].getHalfSuitIndex() == card.getHalfSuitIndex()) {
+        legal = true;
+      }
+    }
+
+    if (asker.hasCard(card)) {
+      legal = false;
+    }
+
+    if (!legal) {
+      console.log("Illegal move, burn baby burn.");
+      this.burn(asker, asked);
+      return;
+    }
+
+    let removalSuccess = asked.remove(card);
+
+    if (removalSuccess == "successful removal") {
+      asker.hand.push(card);
+      console.log("successful ask");
+    } else {
+      console.log("you should've asked nicely.");
+    }
+  }
 }
 
 let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
 let fishGame = new Fish(playerList);
 fishGame.declare(p1, [new Card("H", "8"), new Card("S", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")], [p3, p5, p3, p1, p5, p1]);
 console.log(fishGame.halfSuitStatus);
+console.log(p1.hand)
+console.log(p3.hand)
+console.log(p5.hand)
+
+fishGame.ask(p1, p2, new Card("C", "3"));
+console.log(p2.hand);
 
 
 client.once('ready', () =>  {
   console.log('botDrg is online!');
 })
 
-client.on('messageCreate', (message) => {
+client.on("messageCreate", (message) => {
   if (message.content.includes("billy bob")) {
     message.channel.send("YEEHAW!")
   }
@@ -286,7 +381,7 @@ client.on('messageCreate', (message) => {
       } else if (args[0] == 'doch') {
         fish.test(message);
       } else if (args[0] == 'only') {
-        message.reply({content: 'Only you! :)', ephemeral: true});
+        message.author.send({content: 'Only you! :)', ephemeral: true});
       }
       break;
   }
