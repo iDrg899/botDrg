@@ -45,7 +45,7 @@ function indexOfArrayInArray(arr, item) {
 
     let equal = true;
     for (let j = 0; j < item.length; j++) {
-      if (compared[j] !== item[j]) {
+      if (!compared[j].isEqualTo(item[j])) {
         equal = false;
         break;
       }
@@ -180,8 +180,8 @@ class Fish {
     let deck = new Deck(defaultDeckType);
     this.table = players; // Change this later to customize order
 
-    let team1 = [this.table[0], this.table[2], this.table[4]];
-    let team2 = [this.table[1], this.table[3], this.table[5]];
+    this.team1 = [this.table[0], this.table[2], this.table[4]];
+    this.team2 = [this.table[1], this.table[3], this.table[5]];
 
     let dealingIdx = 0;
     while (!deck.isEmpty()) {
@@ -192,16 +192,16 @@ class Fish {
     this.halfSuitStatus = [0, 0, 0, 0, 0, 0, 0, 0, 0];
   }
 
-  declare(declarer, cardList, playerList) {
-    // Check if player guesses are correct.
-    for (let i = 0; i < cardList.length; i++) {
-      console.log(cardList[i].getOwnerFrom(this.table).username)
-      console.log(playerList[i].username)
-      if (cardList[i].getOwnerFrom(this.table) !== playerList[i]) {
-        console.log("Player guess wrong!!!")
-      }
+  getTeamOf(player) {
+    if (this.team1.includes(player)) {
+      return 1;
+    } else {
+      return 2;
     }
+  }
 
+  declare(declarer, cardList, playerList) {
+    let copy = [...cardList];
     // Sort cardList.
     for (let i = 0; i < cardList.length; i++) {
       let mindex = i;
@@ -218,9 +218,35 @@ class Fish {
     // Check if half suit is good.
     if (isArrayInArray(HALFSUITS, cardList)) {
       console.log("Good half suit");
-      this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = declarer.team;
     } else {
       console.log("BAD hald suit!!!");
+      // TODO: tell user to put in better half suit
+      return;
+    }
+
+    let sameTeam = true;
+    let badGuess = false;
+    // Check if player guesses are correct.
+    for (let i = 0; i < copy.length; i++) {
+      console.log(copy[i].getOwnerFrom(this.table).username)
+      console.log(playerList[i].username)
+      if (copy[i].getOwnerFrom(this.table) !== playerList[i]) {
+        console.log("Player guess wrong!!!")
+        badGuess = true;
+        if (this.getTeamOf(declarer) !== this.getTeamOf(copy[i].getOwnerFrom(this.table))) {
+          sameTeam = false;
+        }
+      }
+    }
+
+    if (badGuess) {
+      if (sameTeam) {
+        this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = -1;
+      } else {
+        this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = 3 - this.getTeamOf(declarer);
+      } 
+    } else {
+      this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = this.getTeamOf(declarer);
     }
   }
 }
@@ -228,6 +254,7 @@ class Fish {
 let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
 let fishGame = new Fish(playerList);
 fishGame.declare(p1, [new Card("H", "8"), new Card("S", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")], [p3, p5, p3, p1, p5, p1]);
+console.log(fishGame.halfSuitStatus);
 
 
 client.once('ready', () =>  {
