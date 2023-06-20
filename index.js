@@ -1,17 +1,17 @@
 const Discord = require('discord.js');
 
 const client = new Discord.Client({
-    intents: [
-        'Guilds',
-        'GuildMembers',
-        'GuildModeration',
-        'GuildMessages',
-        'GuildMessageReactions',
-        'DirectMessageTyping',
-        'MessageContent',
-        'AutoModerationConfiguration',
-        'AutoModerationExecution'
-    ]
+  intents: [
+    'Guilds',
+    'GuildMembers',
+    'GuildModeration',
+    'GuildMessages',
+    'GuildMessageReactions',
+    'DirectMessageTyping',
+    'MessageContent',
+    'AutoModerationConfiguration',
+    'AutoModerationExecution'
+  ]
 });
 
 const prefix = '-';
@@ -22,19 +22,38 @@ client.commands = new Discord.Collection();
 
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
+  const command = require(`./commands/${file}`);
 
-    client.commands.set(command.name, command);
+  client.commands.set(command.name, command);
 }
 
-const SUITS = ["S", "H", "D", "C"];
-const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+function isArrayInArray(arr, item){
+  var item_as_string = JSON.stringify(item);
+
+  var contains = arr.some(function(ele){
+    return JSON.stringify(ele) === item_as_string;
+  });
+  return contains;
+}
+
+// const defaultDeckType = "shuffled";
+const defaultDeckType = "seeded";
+// const defaultDeckType = "unshuffled";
+const SUITS = ["S", "H", "D", "C", "J"];
+const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "B", "R"];
+
+class Player {
+  constructor(username) {
+    this.username = username;
+    this.hand = [];
+  }
+}
 
 /* Card class */
 class Card {
   constructor(suit, value) {
-    if (SUITS.includes(suit) || suit === "J") {
-      if (VALUES.includes(value) || (suit === "J" && (value === "B" || value === "R"))) {
+    if (SUITS.includes(suit)) {
+      if (VALUES.includes(value)) {
         this.suit = suit;
         this.value = value;
       } else {
@@ -44,20 +63,73 @@ class Card {
       console.log("Error! Suit bad!");
     }
   }
+
+  isEqualTo(card) {
+    return (this.suit === card.suit && this.value === card.value);
+  }
+
+  isLessThan(card) {
+    if (SUITS.indexOf(this.suit) < SUITS.indexOf(card.suit)) {
+      return true;
+    } else if (SUITS.indexOf(this.suit) === SUITS.indexOf(card.suit) && VALUES.indexOf(this.value) < VALUES.indexOf(card.value)) {
+      return true;
+    }
+    return false;
+  }
+
+  getOwnerFrom(playerList) {
+    for (let i = 0; i < playerList.length; i++) {
+      for (let j = 0; j < playerList[i].hand.length; j++) {
+        if (this.isEqualTo(playerList[i].hand[j])) {
+          return playerList[i];
+        }
+      }
+    }
+    console.log("There is a card that no player owns.")
+    return -1;
+  }
 }
+
+const HALFSUITS = [
+  [new Card("S", "2"), new Card("S", "3"), new Card("S", "4"), new Card("S", "5"), new Card("S", "6"), new Card("S", "7")],
+  [new Card("S", "9"), new Card("S", "10"), new Card("S", "J"), new Card("S", "Q"), new Card("S", "K"), new Card("S", "A")],
+  [new Card("H", "2"), new Card("H", "3"), new Card("H", "4"), new Card("H", "5"), new Card("H", "6"), new Card("H", "7")],
+  [new Card("H", "9"), new Card("H", "10"), new Card("H", "J"), new Card("H", "Q"), new Card("H", "K"), new Card("H", "A")],
+  [new Card("D", "2"), new Card("D", "3"), new Card("D", "4"), new Card("D", "5"), new Card("D", "6"), new Card("D", "7")],
+  [new Card("D", "9"), new Card("D", "10"), new Card("D", "J"), new Card("D", "Q"), new Card("D", "K"), new Card("D", "A")],
+  [new Card("C", "2"), new Card("C", "3"), new Card("C", "4"), new Card("C", "5"), new Card("C", "6"), new Card("C", "7")],
+  [new Card("C", "9"), new Card("C", "10"), new Card("C", "J"), new Card("C", "Q"), new Card("C", "K"), new Card("C", "A")],
+  [new Card("S", "8"), new Card("H", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")],
+];
 
 /* Deck class */
 class Deck {
-  constructor() {
+  constructor(type = "unshuffled") {
     let cards = [];
-    for (let i = 0; i < SUITS.length; i++) {
-      for (let j = 0; j < VALUES.length; j++) {
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 13; j++) {
         cards.push(new Card(SUITS[i], VALUES[j]));
       }
     }
     cards.push(new Card("J", "B"));
     cards.push(new Card("J", "R"));
     this.cards = cards;
+
+    if (type === "shuffled") {
+      this.shuffle()
+    }
+
+    if (type === "seeded") {
+      let tmp = this.cards[20]
+      this.cards[20] = this.cards[21];
+      this.cards[21] = tmp;
+      tmp = this.cards[46]
+      this.cards[46] = this.cards[47];
+      this.cards[47] = tmp;
+      tmp = this.cards[52]
+      this.cards[52] = this.cards[1];
+      this.cards[1] = tmp;
+    }
   }
 
   shuffle() {
@@ -69,59 +141,98 @@ class Deck {
       this.cards[j] = tmp;
     }
   }
+
+  dealCard() {
+    return this.cards.pop();
+  }
+
+  isEmpty() {
+    return (this.cards.length == 0);
+  }
 }
-
-let deck = new Deck();
-deck.shuffle();
-console.log(deck.cards);
-
 
 // Beginning of Fish BS
 class Fish {
-    constructor(team1, team2) {
-        this.team1 = team1;
-        this.team2 = team2;
+  constructor(players) {
+    let deck = new Deck(defaultDeckType);
+    this.table = players; // Change this later to customize order
+
+    let team1 = [this.table[0], this.table[2], this.table[4]];
+    let team2 = [this.table[1], this.table[3], this.table[5]];
+
+    let dealingIdx = 0;
+    while (!deck.isEmpty()) {
+      this.table[dealingIdx % 6].hand.push(deck.dealCard());
+      dealingIdx++;
+    }
+  }
+
+  declare(declarer, cardList, playerList) {
+    // Check if player guesses are correct.
+    for (let i = 0; i < cardList.length; i++) {
+      console.log(cardList[i].getOwnerFrom(this.table).username)
+      console.log(playerList[i].username)
+      if (cardList[i].getOwnerFrom(this.table) !== playerList[i]) {
+        console.log("Player guess wrong!!!")
+      }
     }
 
-    test(message) {
-        message.channel.send('Fish tested!');
-        console.log('Fish tested!');
+    // Sort cardList.
+    for (let i = 0; i < cardList.length; i++) {
+      let mindex = i;
+      for (let j = i; j < cardList.length; j++) {
+        if (cardList[j].isLessThan(cardList[mindex])) {
+          mindex = j;
+        }
+      }
+      let tmp = cardList[mindex];
+      cardList[mindex] = cardList[i];
+      cardList[i] = tmp;
     }
+
+    // Check if half suit is good.
+    if (isArrayInArray(HALFSUITS, cardList)) {
+      console.log("Good half suit");
+    } else {
+      console.log("BAD hald suit!!!");
+    }
+  }
 }
 
-var fish = new Fish();
-// End of Fish BS
+let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
+let fishGame = new Fish(playerList);
+fishGame.declare(p1, [new Card("H", "8"), new Card("S", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")], [p3, p5, p3, p1, p5, p1]);
 
 
 client.once('ready', () =>  {
-    console.log('botDrg is online!');
+  console.log('botDrg is online!');
 })
 
 client.on('messageCreate', (message) => {
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
 
-    const args = message.content.slice(prefix.length).split(/ +/);
-    const command = args.shift().toLowerCase();
+  const args = message.content.slice(prefix.length).split(/ +/);
+  const command = args.shift().toLowerCase();
 
-    switch (command) {
-        case 'ping':
-            client.commands.get('ping').execute(message, args);
-            break;
-        case 'test1':
-            client.commands.get('test1').execute(message, args);
-            break;
-        case 'fish':
-            message.channel.send('Fish!');
+  switch (command) {
+    case 'ping':
+      client.commands.get('ping').execute(message, args);
+      break;
+    case 'test1':
+      client.commands.get('test1').execute(message, args);
+      break;
+    case 'fish':
+      message.channel.send('Fish!');
 
-            if (args[0] == 'begin') {
-                fish = new Fish();
-            } else if (args[0] == 'doch') {
-                fish.test(message);
-            } else if (args[0] == 'only') {
-                message.reply({content: 'Only you! :)', ephemeral: true});
-            }
-            break;
-    }
+      if (args[0] == 'begin') {
+        fish = new Fish();
+      } else if (args[0] == 'doch') {
+        fish.test(message);
+      } else if (args[0] == 'only') {
+        message.reply({content: 'Only you! :)', ephemeral: true});
+      }
+      break;
+  }
 })
 
 client.login('MTEyMDUxMTY1NDE5OTgyODU1Mg.GRKEVP.UJU3DHtQyuCan7G0AmmH4Fa2Z1HtroPDhYnYAk');
