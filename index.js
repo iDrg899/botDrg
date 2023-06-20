@@ -235,6 +235,10 @@ client.once('ready', () =>  {
 })
 
 client.on('messageCreate', (message) => {
+  if (message.content.includes("billy bob")) {
+    message.channel.send("YEEHAW!")
+  }
+
   if (!message.content.startsWith(prefix) || message.author.bot) return;
 
   const args = message.content.slice(prefix.length).split(/ +/);
