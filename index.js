@@ -1,4 +1,6 @@
 const {Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection} = require('discord.js');
+const wait = require('node:timers/promises').setTimeout;
+require("dotenv").config()
 
 const client = new Client({
   intents: [
@@ -409,6 +411,6 @@ client.on('interactionCreate', async (interaction) => {
   console.log("TEST")
 });
 
-client.login('MTEyMDUxMTY1NDE5OTgyODU1Mg.GRKEVP.UJU3DHtQyuCan7G0AmmH4Fa2Z1HtroPDhYnYAk');
+client.login(process.env.TOKEN);
 
 // client.api.interactions(this.id, this.token).callback.post( {data: { type: 4, data: {flags:64, content: message}}  }))
