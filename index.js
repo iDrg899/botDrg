@@ -1,4 +1,4 @@
-const {Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection} = require('discord.js');
+const {Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink} = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 
@@ -340,19 +340,26 @@ class Fish {
       console.log("you should've asked nicely.");
     }
   }
+
+  printTeams(channel) {
+    channel.send(`Team 1: ${this.team1[0].username}, ${this.team1[1].username}, ${this.team1[2].username}`);
+    channel.send(`Team 2: ${this.team2[0].username}, ${this.team2[1].username}, ${this.team2[2].username}`);
+  }
 }
 
-let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
-let fishGame = new Fish(playerList);
-fishGame.declare(p1, [new Card("H", "8"), new Card("S", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")], [p3, p5, p3, p1, p5, p1]);
-console.log(fishGame.halfSuitStatus);
-console.log(p1.hand)
-console.log(p3.hand)
-console.log(p5.hand)
+/* old test */
+// let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
+// let fishGame = new Fish(playerList);
+// fishGame.declare(p1, [new Card("H", "8"), new Card("S", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")], [p3, p5, p3, p1, p5, p1]);
+// console.log(fishGame.halfSuitStatus);
+// console.log(p1.hand)
+// console.log(p3.hand)
+// console.log(p5.hand)
 
-fishGame.ask(p1, p2, new Card("C", "3"));
-console.log(p2.hand);
+// fishGame.ask(p1, p2, new Card("C", "3"));
+// console.log(p2.hand);
 
+let fishGame;
 
 client.once('ready', () =>  {
   console.log('botDrg is online!');
@@ -369,24 +376,30 @@ client.on("messageCreate", (message) => {
   const command = args.shift().toLowerCase();
 
   switch (command) {
-    case 'ping':
-      client.commands.get('ping').execute(message, args);
+    case "ping":
+      client.commands.get("ping").execute(message, args);
       break;
-    case 'test1':
-      client.commands.get('test1').execute(message, args);
+    case "test1":
+      client.commands.get("test1").execute(message, args);
       break;
-    case 'fish':
-      message.channel.send('Fish!');
+    case "fish":
+      switch (args[0]) {
+        case "begin":
+          let userList = args.slice(1, 7);
+          let playerList = [];
+          for (let i = 0; i < 6; i++) {
+            playerList.push(new Player(userList[i]));
+          }
+          fishGame = new Fish(playerList);          // idk if this fish game is accessible to other commands lol
+          console.log(fishGame);
 
-      if (args[0] == 'begin') {
-        fish = new Fish();
-      } else if (args[0] == 'doch') {
-        fish.test(message);
-      } else if (args[0] == 'only') {
-        message.author.send({content: 'Only you! :)', ephemeral: true});
+          fishGame.printTeams(message.channel);
+          break;
+        case "check":
+          fishGame.printTeams(message.channel);
       }
       break;
-    case 'button':
+    case "button":
       const button = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("button").setLabel("Show Cards!").setStyle(ButtonStyle.Primary))
       const embed = new EmbedBuilder().setColor("Blue").setDescription(`Game has started; Please click to see your cards`)
       const embed2 = new EmbedBuilder().setColor("Blue").setDescription(`The button was pressed`)
