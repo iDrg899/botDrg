@@ -1,6 +1,6 @@
-const Discord = require('discord.js');
+const {Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection} = require('discord.js');
 
-const client = new Discord.Client({
+const client = new Client({
   intents: [
     'Guilds',
     'GuildMembers',
@@ -18,7 +18,7 @@ const prefix = '-';
 
 const fs = require('fs');
 
-client.commands = new Discord.Collection();
+client.commands = new Collection();
 
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
@@ -384,8 +384,30 @@ client.on("messageCreate", (message) => {
         message.author.send({content: 'Only you! :)', ephemeral: true});
       }
       break;
+    case 'button':
+      const button = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("button").setLabel("Show Cards!").setStyle(ButtonStyle.Primary))
+      const embed = new EmbedBuilder().setColor("Blue").setDescription(`Game has started; Please click to see your cards`)
+      const embed2 = new EmbedBuilder().setColor("Blue").setDescription(`The button was pressed`)
+
+      message.channel.send({embeds:[embed], components: [button]})
+
+      const collector = message.channel.createMessageComponentCollector()
+      collector.on("collect", async i => {
+        // console.log(i)
+      })
   }
 })
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isButton()) return;
+
+  await interaction.reply({
+    content: 'This is an ephemeral message!',
+    ephemeral: true,
+  });
+
+  console.log("TEST")
+});
 
 client.login('MTEyMDUxMTY1NDE5OTgyODU1Mg.GRKEVP.UJU3DHtQyuCan7G0AmmH4Fa2Z1HtroPDhYnYAk');
 
