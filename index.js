@@ -68,8 +68,8 @@ const SUITS = ["S", "H", "D", "C", "J"];
 const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "B", "R"];
 
 class Player {
-  constructor(username) {
-    this.username = username;
+  constructor(id) {
+    this.id = id;
     this.hand = [];
   }
 
@@ -84,6 +84,7 @@ class Player {
     }
   }
 
+  // Currently not used.
   getRandomCard() {
     return this.hand[Math.floor(Math.random() * (this.hand.length))];
   }
@@ -150,6 +151,52 @@ class Card {
 
     return -1;
   }
+
+  getName() {
+    let name;
+
+    switch (this.value) {
+      case "A":
+        name = "Ace of ";
+        break;
+      case "J":
+        name = "Jack of ";
+        break;
+      case "Q":
+        name = "Queen of ";
+        break;
+      case "K":
+        name = "King of "
+        break;
+      case "B":
+        name = "Black ";
+        break;
+      case "R":
+        name = "Red ";
+        break;
+      default:
+        name = value + " of ";
+        break;
+    }
+
+    switch (this.suit) {
+      case "S":
+        name += "Spades";
+        break;
+      case "H":
+        name += "Hearts";
+        break;
+      case "D":
+        name += "Diamonds";
+        break;
+      case "C":
+        name += "Clubs."
+        break;
+      case "J":
+        name += "Joker."
+        break;
+    }
+  }
 }
 
 const HALFSUITS = [
@@ -215,12 +262,16 @@ class Deck {
 
 // Beginning of Fish BS
 class Fish {
-  constructor(players) {
+  constructor(channel, players) {
+    this.channel = channel;
+    this.isSomebodySupposedToBurnRightNow = false;
+
     let deck = new Deck(defaultDeckType);
     this.table = players; // Change this later to customize order
 
     this.team1 = [this.table[0], this.table[2], this.table[4]];
     this.team2 = [this.table[1], this.table[3], this.table[5]];
+    this.whoseTurn = this.table[0];
 
     let dealingIdx = 0;
     while (!deck.isEmpty()) {
@@ -274,8 +325,8 @@ class Fish {
     let badGuess = false;
     // Check if player guesses are correct.
     for (let i = 0; i < copy.length; i++) {
-      console.log(copy[i].getOwnerFrom(this.table).username)
-      console.log(playerList[i].username)
+      console.log(copy[i].getOwnerFrom(this.table).id)
+      console.log(playerList[i].id)
       if (copy[i].getOwnerFrom(this.table) !== playerList[i]) {
         console.log("Player guess wrong!!!")
         badGuess = true;
@@ -300,16 +351,33 @@ class Fish {
     }
   }
 
-  burn(giver, recipient) {
-    let card = giver.getRandomCard();
+  burn(giver, recipient, card) {
+    if (giver !== this.whoseTurn) {
+      this.channel.send(`<@${giver.id}> It's not your turn. It's <@${this.whoseTurn.id}>'s turn.`);
+      return;
+    }
+
+    if (!this.isSomebodySupposedToBurnRightNow) {
+      this.channel.send(`<@${giver.id}> You don't need to burn right now.`);
+      return;
+    }
+
     giver.remove(card);
     recipient.hand.push(card);
+    this.isSomebodySupposedToBurnRightNow = false;
+    this.channel.send(`<@${giver.id}> burned the ${card.getName()} to <@${recipient.id}>`);
   }
 
   ask(asker, asked, card) {
+    if (asker !== this.whoseTurn) {
+      console.log("It's not your turn.");
+      this.channel.send(`<@${asker.id}> It's not your turn. It's <@${this.whoseTurn.id}>'s turn.`);
+      return;
+    }
+
     if (this.getTeamOf(asker) === this.getTeamOf(asked)) {
       console.log("Can't ask team member.");
-      // TODO: tell the kids that they can't ask their own team member
+      this.channel.send("You can't asked your own team member. Try again.");
       return;
     }
 
@@ -326,8 +394,9 @@ class Fish {
     }
 
     if (!legal) {
+      this.channel.send(`<@${asker.id}> Illegal move, burn baby burn (-fish burn <card>).`)
       console.log("Illegal move, burn baby burn.");
-      this.burn(asker, asked);
+      this.isSomebodySupposedToBurnRightNow = true;
       return;
     }
 
@@ -336,20 +405,35 @@ class Fish {
     if (removalSuccess == "successful removal") {
       asker.hand.push(card);
       console.log("successful ask");
+      this.channel.send(`<@${asker.id}> successfully asked <@${asked.id}> for the ${card.getName()}.`);
     } else {
       console.log("you should've asked nicely.");
+      this.whoseTurn = asked;
+      this.channel.send(`<@${asker.id}> unsuccessfully asked <@${asked.id}> for the ${card.getName()}.`);
     }
   }
 
   printTeams(channel) {
-    channel.send(`Team 1: ${this.team1[0].username}, ${this.team1[1].username}, ${this.team1[2].username}`);
-    channel.send(`Team 2: ${this.team2[0].username}, ${this.team2[1].username}, ${this.team2[2].username}`);
+    channel.send(`Team 1: <@${this.team1[0].id}>, <@${this.team1[1].id}>, <@${this.team1[2].id}>`);
+    channel.send(`Team 2: <@${this.team2[0].id}>, <@${this.team2[1].id}>, <@${this.team2[2].id}>`);
+  }
+
+  getPlayerFromId(id) {
+    for (let i = 0; i < this.table.length; i++) {
+      console.log(this.table[i].id);
+      console.log(id);
+      if (this.table[i].id === id) {
+        return this.table[i];
+      }
+    }
+
+    return -1;
   }
 }
 
 /* old test */
 // let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
-// let fishGame = new Fish(playerList);
+// let fishGame = new Fish(playerList); // obsolete line (Fish now takes channel argument)
 // fishGame.declare(p1, [new Card("H", "8"), new Card("S", "8"), new Card("D", "8"), new Card("C", "8"), new Card("J", "B"), new Card("J", "R")], [p3, p5, p3, p1, p5, p1]);
 // console.log(fishGame.halfSuitStatus);
 // console.log(p1.hand)
@@ -388,15 +472,28 @@ client.on("messageCreate", (message) => {
           let userList = args.slice(1, 7);
           let playerList = [];
           for (let i = 0; i < 6; i++) {
-            playerList.push(new Player(userList[i]));
+            playerList.push(new Player(userList[i].replace("<@", "").replace(">", "")));
           }
-          fishGame = new Fish(playerList);          // idk if this fish game is accessible to other commands lol
+          fishGame = new Fish(message.channel, playerList);          // idk if this fish game is accessible to other commands lol
           console.log(fishGame);
 
           fishGame.printTeams(message.channel);
           break;
         case "check":
           fishGame.printTeams(message.channel);
+          break;
+        case "ask":
+          let asker = fishGame.getPlayerFromId(message.author.id);
+          let asked = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          fishGame.ask(asker, asked, new Card(args[3], args[2])); // TODO change from Jack of Spades to actual card
+          
+          break;
+        case "burn":
+          let giver = fishGame.getPlayerFromId(message.author.id);
+          let recipient = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          fishGame.burn(giver, recipient, new Card(args[3], args[2]));
+
+          break;
       }
       break;
     case "button":
@@ -410,6 +507,7 @@ client.on("messageCreate", (message) => {
       collector.on("collect", async i => {
         // console.log(i)
       })
+      break;
   }
 })
 
