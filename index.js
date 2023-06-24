@@ -175,7 +175,7 @@ class Card {
         name = "Red ";
         break;
       default:
-        name = value + " of ";
+        name = this.value + " of ";
         break;
     }
 
@@ -196,6 +196,8 @@ class Card {
         name += "Joker."
         break;
     }
+
+    return name;
   }
 }
 
@@ -265,6 +267,7 @@ class Fish {
   constructor(channel, players) {
     this.channel = channel;
     this.isSomebodySupposedToBurnRightNow = false;
+    this.burnRecipient = null;
 
     let deck = new Deck(defaultDeckType);
     this.table = players; // Change this later to customize order
@@ -351,7 +354,7 @@ class Fish {
     }
   }
 
-  burn(giver, recipient, card) {
+  burn(giver, card) {
     if (giver !== this.whoseTurn) {
       this.channel.send(`<@${giver.id}> It's not your turn. It's <@${this.whoseTurn.id}>'s turn.`);
       return;
@@ -362,13 +365,25 @@ class Fish {
       return;
     }
 
+    if (giver !== card.getOwnerFrom(this.table)) {
+      this.channel.send(`<@${giver.id}> You do not own that card. Try again.`);
+      return;
+    }
+
     giver.remove(card);
-    recipient.hand.push(card);
+    this.burnRecipient.hand.push(card);
+    this.channel.send(`<@${giver.id}> burned the ${card.getName()} to <@${this.burnRecipient.id}>.`);
     this.isSomebodySupposedToBurnRightNow = false;
-    this.channel.send(`<@${giver.id}> burned the ${card.getName()} to <@${recipient.id}>`);
+    this.whoseTurn = this.burnRecipient;
+    this.burnRecipient = null;
   }
 
   ask(asker, asked, card) {
+    if (this.isSomebodySupposedToBurnRightNow) {
+      this.channel.send(`<@${asker.id}> That's not a burn, silly! BURN!!! (-fish burn <card>)`);
+      return;
+    }
+
     if (asker !== this.whoseTurn) {
       console.log("It's not your turn.");
       this.channel.send(`<@${asker.id}> It's not your turn. It's <@${this.whoseTurn.id}>'s turn.`);
@@ -394,9 +409,10 @@ class Fish {
     }
 
     if (!legal) {
-      this.channel.send(`<@${asker.id}> Illegal move, burn baby burn (-fish burn <card>).`)
+      this.channel.send(`<@${asker.id}> Illegal move, burn a card to <@${asked.id}> (-fish burn <card>).`)
       console.log("Illegal move, burn baby burn.");
       this.isSomebodySupposedToBurnRightNow = true;
+      this.burnRecipient = asked;
       return;
     }
 
@@ -413,9 +429,9 @@ class Fish {
     }
   }
 
-  printTeams(channel) {
-    channel.send(`Team 1: <@${this.team1[0].id}>, <@${this.team1[1].id}>, <@${this.team1[2].id}>`);
-    channel.send(`Team 2: <@${this.team2[0].id}>, <@${this.team2[1].id}>, <@${this.team2[2].id}>`);
+  printTeams() {
+    this.channel.send(`Team 1: <@${this.team1[0].id}>, <@${this.team1[1].id}>, <@${this.team1[2].id}>`);
+    this.channel.send(`Team 2: <@${this.team2[0].id}>, <@${this.team2[1].id}>, <@${this.team2[2].id}>`);
   }
 
   getPlayerFromId(id) {
@@ -477,10 +493,28 @@ client.on("messageCreate", (message) => {
           fishGame = new Fish(message.channel, playerList);          // idk if this fish game is accessible to other commands lol
           console.log(fishGame);
 
-          fishGame.printTeams(message.channel);
+          fishGame.printTeams();
           break;
         case "check":
-          fishGame.printTeams(message.channel);
+          fishGame.printTeams();
+          break;
+        case "log":
+          switch (args[1]) {
+            case "game":
+              console.log(fishGame);
+              break;
+            case "table":
+              console.log(fishGame.table);
+              break;
+            case "players":
+              for (let i = 0; i < fishGame.table.length; i++) {
+                console.log(fishGame.table[i]);
+              }
+              break;
+            default:
+              console.log("Specify object to log: game, table, players");
+              break;
+          }
           break;
         case "ask":
           let asker = fishGame.getPlayerFromId(message.author.id);
@@ -490,8 +524,7 @@ client.on("messageCreate", (message) => {
           break;
         case "burn":
           let giver = fishGame.getPlayerFromId(message.author.id);
-          let recipient = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
-          fishGame.burn(giver, recipient, new Card(args[3], args[2]));
+          fishGame.burn(giver, new Card(args[2], args[1]));
 
           break;
       }
