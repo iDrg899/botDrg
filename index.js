@@ -306,7 +306,7 @@ class Fish {
 
     showCards(this.channel)
 
-    this.channel.send(`Game has started! <@${this.table[0]}> make your move!`)
+    this.channel.send(`Game has started! <@${this.table[0].id}> make your move!`)
   }
 
   getTeamOf(player) {
@@ -590,12 +590,12 @@ function handToCommand(hand) {
   return command;
 }
 
-function showHandPNG(hand) {
+async function showHandPNG(hand) {
   if (hand.length == 0) {
     return "./cards/empty.png";
   } else {
     if (!fs.existsSync("./images")) {
-      exec("mkdir images", (error, stdout, stderr) => {
+      await exec("mkdir images", (error, stdout, stderr) => {
         if (error) {
           console.log(`ERROR\n${error.message}`);
           return;
@@ -606,7 +606,7 @@ function showHandPNG(hand) {
         }
       });
     }
-    exec(handToCommand(hand), (error, stdout, stderr) => {
+    await exec(handToCommand(hand), (error, stdout, stderr) => {
       if (error) {
         console.log(`ERROR\n${error.message}`);
         return;
@@ -827,9 +827,9 @@ client.on('interactionCreate', async (interaction) => {
 
       break;
     case "cards":
-      let p = getPlayerFromId;
+      let p = fishGame.getPlayerFromId(interaction.user.id);
       let hand = p.hand;
-      interaction.reply({files: [showHandPNG(hand)]});
+      interaction.reply({files: [showHandPNG(hand)], ephemeral:true});
       break;
   }
 });
