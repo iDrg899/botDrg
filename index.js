@@ -1,4 +1,4 @@
-const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, AttachmentBuilder, MessageAttachment, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 const { exec } = require("child_process");
@@ -827,9 +827,12 @@ client.on('interactionCreate', async (interaction) => {
 
       break;
     case "cards":
-      let p = fishGame.getPlayerFromId(interaction.user.id);
-      let hand = p.hand;
-      interaction.reply({files: [showHandPNG(hand)], ephemeral:true});
+      // let p = fishGame.getPlayerFromId(interaction.user.id);
+      // let hand = p.hand;
+
+      const attachment = new AttachmentBuilder('C:/Users/jack1/Documents/Coding/Projects/botDrg/cards/2_of_clubs.png', { name: 'card.png' })
+
+      interaction.reply({files: [attachment], ephemeral:true});
       break;
   }
 });
