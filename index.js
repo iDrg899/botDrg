@@ -304,6 +304,8 @@ class Fish {
 
     this.halfSuitStatus = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
+    showCards(this.channel)
+
     this.channel.send(`Game has started! <@${this.table[0]}> make your move!`)
   }
 
@@ -720,6 +722,13 @@ function makeEmbedPlayerFields() {
   )
 }
 
+function showCards(channel) {
+  const embed = new EmbedBuilder().setColor("Red").setTitle("Click below to view your hand").setDescription(`Please choose your prefered team style in the dropdown!`)
+  const button = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("cards").setLabel("Show Cards!").setStyle(ButtonStyle.Primary))
+  
+  channel.send({embeds:[embed], components:[button]})
+}
+
 function makeStartMenuActionBar() {
   startMenuActionRow = new ActionRowBuilder()
 
@@ -816,6 +825,11 @@ client.on('interactionCreate', async (interaction) => {
 
       interaction.deferUpdate("TEST");
 
+      break;
+    case "cards":
+      let p = getPlayerFromId;
+      let hand = p.hand;
+      interaction.reply({files: [showHandPNG(hand)]});
       break;
   }
 });
