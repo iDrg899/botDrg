@@ -875,14 +875,10 @@ client.on('messageReactionAdd', (reaction, user) => {
 client.on('messageReactionRemove', (reaction, user) => {
   if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
 
-  if (reaction.emoji.name === '1️⃣') {
+  if (reaction.emoji.name === '1️⃣' || reaction.emoji.name === '2️⃣' || reaction.emoji.name === '2️⃣') {
     fishGame.removePlayer(user.id, 1);
+    makeEmbedPlayerFields(game)
   }
-  else if (reaction.emoji.name === '2️⃣') {
-    fishGame.removePlayer(user.id, 2);
-  }
-
-  makeEmbedPlayerFields(game)
 });
 
 client.login(process.env.TOKEN);
