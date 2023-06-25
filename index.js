@@ -593,7 +593,7 @@ function makeStartMenuActionBar() {
   startMenuActionRow = new ActionRowBuilder()
 
   if (random) {
-    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomizeTeams").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
+    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomize").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
   }
 
   if (fishGame.team1.length == 3 && fishGame.team2.length == 3) {
@@ -683,28 +683,32 @@ client.on('interactionCreate', async (interaction) => {
         startMenu.edit({ embeds: [game] })
       }
 
+      interaction.deferUpdate("TEST");
+
       break;
   }
 });
 
 function putOnRandomTeam(id, username) {
-  let team = Math.random() * 2;
+  let team = Math.floor(Math.random() * 2);
   let teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
   if (teamArr.length >= 3) {
     team = 1 - team;
   }
-  if (teamArr.length <= 3) {
+  teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
+  if (teamArr.length <= 2) {
     fishGame.addPlayer(new Player(id, username), team + 1);
   }
 }
 
 function putPlayerOnRandomTeam(player) {
-  let team = Math.random() * 2;
+  let team = Math.floor(Math.random() * 2);
   let teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
   if (teamArr.length >= 3) {
     team = 1 - team;
   }
-  if (teamArr.length <= 3) {
+  teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
+  if (teamArr.length <= 2) {
     fishGame.addPlayer(player, team + 1);
   }
 }
