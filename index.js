@@ -4,6 +4,8 @@ require("dotenv").config()
 
 let startMenu;
 let game;
+let startMenuActionRow;
+let random = false;
 
 const client = new Client({
   intents: [
@@ -585,13 +587,18 @@ function makeEmbedPlayerFields() {
   )
 }
 
-client.on('messageReactionAdd', (reaction, user) => {
-  const targetMessageId = 'your_message_id';
+function makeStartMenuActionBar() {
+  startMenuActionRow = new ActionRowBuilder()
 
-  if (reaction.message.id === targetMessageId && reaction.emoji.name === '👍') {
-    console.log(`${user.username} reacted with 👍 on the target message.`);
+
+  if (random) {
+    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomizeTeams").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
   }
-});
+
+  if (fishGame.team1.length == 3 && fishGame.team2.length == 3) {
+    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("start").setLabel("Start Game!").setStyle(ButtonStyle.Success))
+  }
+}
 
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
@@ -630,10 +637,18 @@ client.on('interactionCreate', async (interaction) => {
     case "teams":
       let choice = interaction.values[0];
       fishGame = new Fish(interaction.message.channel);          // idk if this fish game is accessible to other commands lol
+      random = choice == "Random"
+      makeEmbedPlayerFields()
+      makeStartMenuActionBar()
 
-      makeEmbedPlayerFields(game)
+      let sentMessage;
 
-      const sentMessage = await interaction.message.channel.send({ embeds: [game] })
+      if (startMenuActionRow.components.length > 0) {
+        sentMessage = await interaction.message.channel.send({ embeds: [game], components:[startMenuActionRow]})
+      }
+      else {
+        sentMessage = await interaction.message.channel.send({ embeds: [game]})
+      }
       startMenu = sentMessage;
       if (choice == "Random") {
         await sentMessage.react("🐟")
@@ -676,6 +691,12 @@ client.on('messageReactionRemove', (reaction, user) => {
   }
 
   makeEmbedPlayerFields(game)
+  if (startMenuActionRow.components.length > 0) {
+    startMenu.edit({ embeds: [game], components:[startMenuActionRow] })
+  }
+  else {
+    startMenu.edit({ embeds: [game] })
+  }
   startMenu.edit({ embeds: [game] })
 });
 
