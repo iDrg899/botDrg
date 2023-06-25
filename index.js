@@ -146,7 +146,7 @@ class Card {
         }
       }
     }
-    console.log("There is a card that no player owns.")
+    console.log("There is a card that no player owns.");
     return -1;
   }
 

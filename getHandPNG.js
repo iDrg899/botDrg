@@ -1,7 +1,8 @@
 const { exec } = require("child_process");
+const fs = require("fs");
 
 function cardToFile(card) {
-  let ret = "";
+  let ret = "cards/";
   switch (card.value) {
     case "A":
       ret += "ace_of";
@@ -51,7 +52,7 @@ function cardToFile(card) {
   }
   ret += "_";
 
-  switch (this.suit) {
+  switch (card.suit) {
 		case "S":
       ret += "spades";
 			break;
@@ -65,6 +66,7 @@ function cardToFile(card) {
       ret += "clubs";
 			break;
 		case "J":
+      console.log("testing");
       ret += "joker";
 			break;
   }
@@ -73,24 +75,73 @@ function cardToFile(card) {
   return ret;
 }
 
+/* Use if hand has more than 0 cards */
 function handToCommand(hand) {
-  let command = "magick montage";
+  let command = "magick montage ";
   let handSize = hand.length;
-  if (handSize == 0) {
 
+  for (let i = 0; i < handSize; i++) {
+    command += cardToFile(hand[i]);
+    command += " ";
+  }
+  command += `-tile ${handSize}x1 images/hand.png`;
+
+  return command;
+}
+
+function showHandPNG(hand) {
+  if (hand.length == 0) {
+    return "cards/empty.png";
+  } else {
+    if (!fs.existsSync("./images")) {
+      exec("mkdir images", (error, stdout, stderr) => {
+        if (error) {
+          console.log(`ERROR\n${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.log(`stderr\n${stderr.message}`);
+          return;
+        }
+        console.log(`stdout:\n${stdout}`);
+      });
+    }
+    exec(handToCommand(hand), (error, stdout, stderr) => {
+      if (error) {
+        console.log(`ERROR\n${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.log(`stderr\n${stderr.message}`);
+        return;
+      }
+
+      console.log(`stdout:\n${stdout}`);
+    });
+
+    return "images/hand.png";
   }
 }
 
-
-exec("montage", (error, stdout, stderr) => {
-  if (error) {
-    console.log(`ERROR\n${error.message}`);
-    return;
+const SUITS = ["S", "H", "D", "C", "J"];
+const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "B", "R"];
+/* Card class */
+class Card {
+  constructor(suit, value) {
+    if (SUITS.includes(suit)) {
+      if (VALUES.includes(value)) {
+        this.suit = suit;
+        this.value = value;
+      } else {
+        console.log("Error! Value bad!");
+      }
+    } else {
+      console.log("Error! Suit bad!");
+    }
   }
-  if (stderr) {
-    console.log(`stderr\n${stderr.message}`);
-    return;
-  }
+}
 
-  console.log(`stdout:\n${stdout}`);
-});
+let h1 = [];
+let h2 = [new Card("S", "5")];
+console.log(showHandPNG(h1));
+console.log(showHandPNG(h2));
