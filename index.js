@@ -590,12 +590,11 @@ function makeEmbedPlayerFields() {
 function makeStartMenuActionBar() {
   startMenuActionRow = new ActionRowBuilder()
 
-
   if (random) {
     startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomizeTeams").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
   }
 
-  if (fishGame.team1.length == 3 && fishGame.team2.length == 3) {
+  if (fishGame.team1.length == 3 && fishGame.team2.legal == 3) {
     startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("start").setLabel("Start Game!").setStyle(ButtonStyle.Success))
   }
 }
@@ -666,17 +665,26 @@ client.on('messageReactionAdd', (reaction, user) => {
   if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
 
   if (reaction.emoji.name === '1️⃣') {
-    if (fishGame.team1.length < 2) {
+    if (fishGame.team1.length <= 2) {
       fishGame.addPlayer(new Player(user.id, user.username), 1);
     }
   }
   else if (reaction.emoji.name === '2️⃣') {
-    if (fishGame.team2.length < 2) {
+    if (fishGame.team2.length <= 2) {
       fishGame.addPlayer(new Player(user.id, user.username), 2);
     }
   }
 
   makeEmbedPlayerFields(game)
+  makeStartMenuActionBar()
+
+  if (startMenuActionRow.components.length > 0) {
+    startMenu.edit({ embeds: [game], components:[startMenuActionRow] })
+  }
+  else {
+    startMenu.edit({ embeds: [game] })
+  }
+
   startMenu.edit({ embeds: [game] })
 });
 
@@ -691,13 +699,6 @@ client.on('messageReactionRemove', (reaction, user) => {
   }
 
   makeEmbedPlayerFields(game)
-  if (startMenuActionRow.components.length > 0) {
-    startMenu.edit({ embeds: [game], components:[startMenuActionRow] })
-  }
-  else {
-    startMenu.edit({ embeds: [game] })
-  }
-  startMenu.edit({ embeds: [game] })
 });
 
 client.login(process.env.TOKEN);
