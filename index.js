@@ -724,7 +724,7 @@ function makeStartMenuActionBar() {
   startMenuActionRow = new ActionRowBuilder()
 
   if (random) {
-    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomizeTeams").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
+    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomize").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
   }
 
   if (fishGame.team1.length == 3 && fishGame.team2.length == 3) {
@@ -776,10 +776,10 @@ client.on('interactionCreate', async (interaction) => {
       let sentMessage;
 
       if (startMenuActionRow.components.length > 0) {
-        sentMessage = await interaction.message.channel.send({ embeds: [game], components:[startMenuActionRow]})
+        sentMessage = await interaction.message.channel.send({ embeds: [game], components: [startMenuActionRow] })
       }
       else {
-        sentMessage = await interaction.message.channel.send({ embeds: [game]})
+        sentMessage = await interaction.message.channel.send({ embeds: [game] })
       }
       startMenu = sentMessage;
       if (choice == "Random") {
@@ -794,8 +794,55 @@ client.on('interactionCreate', async (interaction) => {
     case "start":
       fishGame.start()
       break;
+    case "randomize":
+      let players = []
+      fishGame.team1.forEach((player) => {players.push(player)})
+      fishGame.team2.forEach((player) => {players.push(player)})
+      
+      fishGame.team1 = []
+      fishGame.team2 = []
+
+      players.forEach((player) => {putPlayerOnRandomTeam(player)})
+
+      makeEmbedPlayerFields(game)
+      makeStartMenuActionBar()
+
+      if (startMenuActionRow.components.length > 0) {
+        startMenu.edit({ embeds: [game], components: [startMenuActionRow] })
+      }
+      else {
+        startMenu.edit({ embeds: [game] })
+      }
+
+      interaction.deferUpdate("TEST");
+
+      break;
   }
 });
+
+function putOnRandomTeam(id, username) {
+  let team = Math.floor(Math.random() * 2);
+  let teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
+  if (teamArr.length >= 3) {
+    team = 1 - team;
+  }
+  teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
+  if (teamArr.length <= 2) {
+    fishGame.addPlayer(new Player(id, username), team + 1);
+  }
+}
+
+function putPlayerOnRandomTeam(player) {
+  let team = Math.floor(Math.random() * 2);
+  let teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
+  if (teamArr.length >= 3) {
+    team = 1 - team;
+  }
+  teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
+  if (teamArr.length <= 2) {
+    fishGame.addPlayer(player, team + 1);
+  }
+}
 
 client.on('messageReactionAdd', (reaction, user) => {
   if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
@@ -810,18 +857,19 @@ client.on('messageReactionAdd', (reaction, user) => {
       fishGame.addPlayer(new Player(user.id, user.username), 2);
     }
   }
+  else if (reaction.emoji.name === '🐟') {
+    putOnRandomTeam(user.id, user.username)
+  }
 
   makeEmbedPlayerFields(game)
   makeStartMenuActionBar()
 
   if (startMenuActionRow.components.length > 0) {
-    startMenu.edit({ embeds: [game], components:[startMenuActionRow] })
+    startMenu.edit({ embeds: [game], components: [startMenuActionRow] })
   }
   else {
     startMenu.edit({ embeds: [game] })
   }
-
-  startMenu.edit({ embeds: [game] })
 });
 
 client.on('messageReactionRemove', (reaction, user) => {
