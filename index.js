@@ -279,7 +279,6 @@ class Fish {
     this.isSomebodySupposedToBurnRightNow = false;
     this.burnRecipient = null;
 
-    let deck = new Deck(defaultDeckType);
     this.table = []; // Change this later to customize order
 
     this.team1 = [];
@@ -288,6 +287,7 @@ class Fish {
   }
 
   start() {
+    let deck = new Deck(defaultDeckType);
     let dealingIdx = 0;
     while (!deck.isEmpty()) {
       this.table[dealingIdx % 6].hand.push(deck.dealCard());
@@ -295,6 +295,8 @@ class Fish {
     }
 
     this.halfSuitStatus = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    this.channel.send(`Game has started! <@${this.table[0]}> make your move!`)
   }
 
   getTeamOf(player) {
@@ -594,7 +596,7 @@ function makeStartMenuActionBar() {
     startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomizeTeams").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
   }
 
-  if (fishGame.team1.length == 3 && fishGame.team2.legal == 3) {
+  if (fishGame.team1.length == 3 && fishGame.team2.length == 3) {
     startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("start").setLabel("Start Game!").setStyle(ButtonStyle.Success))
   }
 }
@@ -657,6 +659,9 @@ client.on('interactionCreate', async (interaction) => {
         await sentMessage.react("2️⃣");
       }
 
+      break;
+    case "start":
+      fishGame.start()
       break;
   }
 });
