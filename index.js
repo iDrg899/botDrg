@@ -618,7 +618,7 @@ function findStartMenuID(id) {
 client.on('messageReactionAdd', (reaction, user) => {
   if (!findStartMenuID(reaction.message.id) && user.id != reaction.message.author.id)
 
-  if (reaction.emoji.name === '👍') {
+  if (reaction.emoji.name === '1️⃣') {
     console.log(`${user.username} reacted with 👍 on the target message.`);
   }
 });
