@@ -1,6 +1,7 @@
 const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
+const { exec } = require("child_process");
 
 let startMenu;
 let game;
@@ -146,7 +147,7 @@ class Card {
         }
       }
     }
-    console.log("There is a card that no player owns.")
+    console.log("There is a card that no player owns.");
     return -1;
   }
 
@@ -287,6 +288,13 @@ class Fish {
   }
 
   start() {
+    for (let i = 0; i < 3; i++) {
+      this.table.push(this.team1[i]);
+      this.table.push(this.team2[i]);
+    }
+
+    this.whoseTurn = this.table[0];
+
     let deck = new Deck(defaultDeckType);
     let dealingIdx = 0;
     while (!deck.isEmpty()) {
@@ -407,6 +415,10 @@ class Fish {
     }
 
     if (giver !== card.getOwnerFrom(this.table)) {
+      //TODO: remove next 2 lines
+      console.log(giver);
+      console.log(card.getOwnerFrom(this.table));
+
       this.channel.send(`<@${giver.id}> You do not own that card. Try again.`);
       return;
     }
@@ -485,6 +497,125 @@ class Fish {
     }
 
     return -1;
+  }
+}
+
+function cardToFile(card) {
+  let ret = "cards/";
+  switch (card.value) {
+    case "A":
+      ret += "ace_of";
+      break;
+    case "2":
+      ret += "2_of";
+      break;
+    case "3":
+      ret += "3_of";
+      break;
+    case "4":
+      ret += "4_of";
+      break;
+    case "5":
+      ret += "5_of";
+      break;
+    case "6":
+      ret += "6_of";
+      break;
+    case "7":
+      ret += "7_of";
+      break;
+    case "8":
+      ret += "8_of";
+      break;
+    case "9":
+      ret += "9_of";
+      break;
+    case "10":
+      ret += "10_of";
+      break;
+    case "J":
+      ret += "jack_of";
+      break;
+    case "Q":
+      ret += "queen_of";
+      break;
+    case "K":
+      ret += "king_of";
+      break;
+    case "B":
+      ret += "black";
+      break;
+    case "R":
+      ret += "red";
+      break;
+  }
+  ret += "_";
+
+  switch (card.suit) {
+		case "S":
+      ret += "spades";
+			break;
+		case "H":
+      ret += "hearts";
+			break;
+		case "D":
+      ret += "diamonds";
+			break;
+		case "C":
+      ret += "clubs";
+			break;
+		case "J":
+      console.log("testing");
+      ret += "joker";
+			break;
+  }
+
+  ret += ".png";
+  return ret;
+}
+
+/* Use if hand has more than 0 cards */
+function handToCommand(hand) {
+  let command = "magick montage ";
+  let handSize = hand.length;
+
+  for (let i = 0; i < handSize; i++) {
+    command += cardToFile(hand[i]);
+    command += " ";
+  }
+  command += `-tile ${handSize}x1 images/hand.png`;
+
+  return command;
+}
+
+function showHandPNG(hand) {
+  if (hand.length == 0) {
+    return "cards/empty.png";
+  } else {
+    if (!fs.existsSync("./images")) {
+      exec("mkdir images", (error, stdout, stderr) => {
+        if (error) {
+          console.log(`ERROR\n${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.log(`stderr\n${stderr.message}`);
+          return;
+        }
+      });
+    }
+    exec(handToCommand(hand), (error, stdout, stderr) => {
+      if (error) {
+        console.log(`ERROR\n${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.log(`stderr\n${stderr.message}`);
+        return;
+      }
+    });
+
+    return "images/hand.png";
   }
 }
 
