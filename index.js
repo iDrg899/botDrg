@@ -590,7 +590,7 @@ function handToCommand(hand) {
 
 function showHandPNG(hand) {
   if (hand.length == 0) {
-    return "cards/empty.png";
+    return "./cards/empty.png";
   } else {
     if (!fs.existsSync("./images")) {
       exec("mkdir images", (error, stdout, stderr) => {
@@ -615,7 +615,7 @@ function showHandPNG(hand) {
       }
     });
 
-    return "images/hand.png";
+    return "./images/hand.png";
   }
 }
 
