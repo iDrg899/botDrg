@@ -2,6 +2,8 @@ const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Cli
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 
+const startMenus = []
+
 const client = new Client({
   intents: [
     'Guilds',
@@ -539,6 +541,14 @@ client.on("messageCreate", (message) => {
   }
 })
 
+client.on('messageReactionAdd', (reaction, user) => {
+  const targetMessageId = 'your_message_id';
+  
+  if (reaction.message.id === targetMessageId && reaction.emoji.name === '👍') {
+    console.log(`${user.username} reacted with 👍 on the target message.`);
+  }
+});
+
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
 
@@ -572,16 +582,44 @@ client.on('interactionCreate', async (interaction) => {
       interaction.message.delete()
       await wait(5000);
       newMessage.delete()
-      break;      
+      break;
     case "teams":
       let choice = interaction.values[0];
       const game = new EmbedBuilder().setColor("Blue").setTitle("New Fish Game").setDescription(`New Fish game starting, react below to reserve a spot`).setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL()}` })
-      if (choice == "Random") {
+      game.addFields(
+        { name: 'Team 1', value: 'Idrg\nJack', inline: true },
+        { name: 'Team 2', value: 'Bawn\nShawn\nLol', inline: true },
+      )
 
+      startMenus.push(game);
+
+      const sentMessage = await interaction.message.channel.send({ embeds: [game] })
+      if (choice == "Random") {
+        await sentMessage.react("🐟")
       }
-      const sentMessage = await interaction.message.channel.send({embeds:[game]})
-      await sentMessage.react("👍");
+      else {        
+        await sentMessage.react("1️⃣");
+        await sentMessage.react("2️⃣");
+      }
+
       break;
+  }
+});
+
+function findStartMenuID(id) {
+  startMenus.forEach((menu) => {
+    if (menu.id == id) {
+      return true;
+    }
+  })
+  return false;
+}
+
+client.on('messageReactionAdd', (reaction, user) => {
+  if (!findStartMenuID(reaction.message.id) && user.id != reaction.message.author.id)
+
+  if (reaction.emoji.name === '👍') {
+    console.log(`${user.username} reacted with 👍 on the target message.`);
   }
 });
 
