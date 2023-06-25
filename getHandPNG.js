@@ -122,26 +122,3 @@ function showHandPNG(hand) {
     return "images/hand.png";
   }
 }
-
-const SUITS = ["S", "H", "D", "C", "J"];
-const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "B", "R"];
-/* Card class */
-class Card {
-  constructor(suit, value) {
-    if (SUITS.includes(suit)) {
-      if (VALUES.includes(value)) {
-        this.suit = suit;
-        this.value = value;
-      } else {
-        console.log("Error! Value bad!");
-      }
-    } else {
-      console.log("Error! Suit bad!");
-    }
-  }
-}
-
-let h1 = [];
-let h2 = [new Card("S", "5")];
-console.log(showHandPNG(h1));
-console.log(showHandPNG(h2));
