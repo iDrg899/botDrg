@@ -287,6 +287,13 @@ class Fish {
   }
 
   start() {
+    for (let i = 0; i < 3; i++) {
+      this.table.push(this.team1[i]);
+      this.table.push(this.team2[i]);
+    }
+
+    this.whoseTurn = this.table[0];
+
     let deck = new Deck(defaultDeckType);
     let dealingIdx = 0;
     while (!deck.isEmpty()) {
@@ -407,6 +414,10 @@ class Fish {
     }
 
     if (giver !== card.getOwnerFrom(this.table)) {
+      //TODO: remove next 2 lines
+      console.log(giver);
+      console.log(card.getOwnerFrom(this.table));
+
       this.channel.send(`<@${giver.id}> You do not own that card. Try again.`);
       return;
     }
