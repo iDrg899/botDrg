@@ -1,4 +1,4 @@
-const {Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink} = require('discord.js');
+const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 
@@ -29,10 +29,10 @@ for (const file of commandFiles) {
   client.commands.set(command.name, command);
 }
 
-function isArrayInArray(arr, item){
+function isArrayInArray(arr, item) {
   var item_as_string = JSON.stringify(item);
 
-  var contains = arr.some(function(ele){
+  var contains = arr.some(function (ele) {
     return JSON.stringify(ele) === item_as_string;
   });
   return contains;
@@ -244,8 +244,8 @@ class Deck {
   }
 
   shuffle() {
-    for (let i = this.cards.length-1; i > 0; i--) {
-      let j = Math.floor(Math.random() * (i+1));
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
 
       let tmp = this.cards[i];
       this.cards[i] = this.cards[j];
@@ -348,7 +348,7 @@ class Fish {
         this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = -1;
       } else {
         this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = 3 - this.getTeamOf(declarer);
-      } 
+      }
     } else {
       this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = this.getTeamOf(declarer);
     }
@@ -397,7 +397,7 @@ class Fish {
     }
 
     let legal = false;
-    
+
     for (let i = 0; i < asker.hand.length; i++) {
       if (asker.hand[i].getHalfSuitIndex() == card.getHalfSuitIndex()) {
         legal = true;
@@ -461,7 +461,7 @@ class Fish {
 
 let fishGame;
 
-client.once('ready', () =>  {
+client.once('ready', () => {
   console.log('botDrg is online!');
 })
 
@@ -520,7 +520,7 @@ client.on("messageCreate", (message) => {
           let asker = fishGame.getPlayerFromId(message.author.id);
           let asked = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
           fishGame.ask(asker, asked, new Card(args[3], args[2])); // TODO change from Jack of Spades to actual card
-          
+
           break;
         case "burn":
           let giver = fishGame.getPlayerFromId(message.author.id);
@@ -530,29 +530,59 @@ client.on("messageCreate", (message) => {
       }
       break;
     case "button":
-      const button = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("button").setLabel("Show Cards!").setStyle(ButtonStyle.Primary))
-      const embed = new EmbedBuilder().setColor("Blue").setDescription(`Game has started; Please click to see your cards`)
-      const embed2 = new EmbedBuilder().setColor("Blue").setDescription(`The button was pressed`)
+      const button = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("start_game_button").setLabel("Create Game!").setStyle(ButtonStyle.Primary))
+      const embed = new EmbedBuilder().setColor("Blue").setDescription(`Click the button below to create your new game!`).setAuthor({ name: `${message.author.username}`, iconURL: `${message.author.displayAvatarURL()}` })
 
-      message.channel.send({embeds:[embed], components: [button]})
+      message.channel.send({ embeds: [embed], components: [button] })
 
-      const collector = message.channel.createMessageComponentCollector()
-      collector.on("collect", async i => {
-        // console.log(i)
-      })
       break;
   }
 })
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isButton()) return;
+  if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
 
-  await interaction.reply({
-    content: 'This is an ephemeral message!',
-    ephemeral: true,
-  });
+  switch (interaction.customId) {
+    case "start_game_button":
+      const actionRow = new ActionRowBuilder();
 
-  console.log("TEST")
+      const teams = new StringSelectMenuBuilder()
+        .setCustomId('teams')
+        .setMinValues(1)
+        .setPlaceholder('Team Format!')
+        .addOptions(
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Manual')
+            .setDescription('Everyone indivually picks their team')
+            .setValue('Manual'),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Random')
+            .setDescription('Team selection is random')
+            .setValue('Random'),
+        );
+
+      actionRow.addComponents(teams)
+
+      const embed = new EmbedBuilder().setColor("Red").setTitle("Fish Game Setup Wizard").setDescription(`Please choose your prefered team style in the dropdown!`).setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL()}` })
+      const newMessage = await interaction.reply({
+        embeds: [embed],
+        components: [actionRow],
+        ephemeral: true,
+      });
+      interaction.message.delete()
+      await wait(5000);
+      newMessage.delete()
+      break;      
+    case "teams":
+      let choice = interaction.values[0];
+      const game = new EmbedBuilder().setColor("Blue").setTitle("New Fish Game").setDescription(`New Fish game starting, react below to reserve a spot`).setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL()}` })
+      if (choice == "Random") {
+
+      }
+      const sentMessage = await interaction.message.channel.send({embeds:[game]})
+      await sentMessage.react("👍");
+      break;
+  }
 });
 
 client.login(process.env.TOKEN);
