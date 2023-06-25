@@ -1,4 +1,4 @@
-const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ApplicationCommandNumericOptionMinMaxValueMixin } = require('discord.js');
+const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, AttachmentBuilder, MessageAttachment, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 
@@ -674,6 +674,37 @@ client.on('interactionCreate', async (interaction) => {
       break;
     case "start":
       fishGame.start()
+      break;
+    case "randomize":
+      let players = []
+      fishGame.team1.forEach((player) => {players.push(player)})
+      fishGame.team2.forEach((player) => {players.push(player)})
+      
+      fishGame.team1 = []
+      fishGame.team2 = []
+
+      players.forEach((player) => {putPlayerOnRandomTeam(player)})
+
+      makeEmbedPlayerFields(game)
+      makeStartMenuActionBar()
+
+      if (startMenuActionRow.components.length > 0) {
+        startMenu.edit({ embeds: [game], components: [startMenuActionRow] })
+      }
+      else {
+        startMenu.edit({ embeds: [game] })
+      }
+
+      interaction.deferUpdate("TEST");
+
+      break;
+    case "cards":
+      // let p = fishGame.getPlayerFromId(interaction.user.id);
+      // let hand = p.hand;
+
+      const attachment = new AttachmentBuilder('C:/Users/jack1/Documents/Coding/Projects/botDrg/cards/2_of_clubs.png', { name: 'card.png' })
+
+      interaction.reply({files: [attachment], ephemeral:true});
       break;
   }
 });
