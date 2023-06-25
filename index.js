@@ -1,7 +1,6 @@
-const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ApplicationCommandNumericOptionMinMaxValueMixin } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
-const { exec } = require("child_process");
 
 let startMenu;
 let game;
@@ -304,9 +303,7 @@ class Fish {
 
     this.halfSuitStatus = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-    showCards(this.channel)
-
-    this.channel.send(`Game has started! <@${this.table[0].id}> make your move!`)
+    this.channel.send(`Game has started! <@${this.table[0]}> make your move!`)
   }
 
   getTeamOf(player) {
@@ -417,10 +414,6 @@ class Fish {
     }
 
     if (giver !== card.getOwnerFrom(this.table)) {
-      //TODO: remove next 2 lines
-      console.log(giver);
-      console.log(card.getOwnerFrom(this.table));
-
       this.channel.send(`<@${giver.id}> You do not own that card. Try again.`);
       return;
     }
@@ -502,125 +495,6 @@ class Fish {
   }
 }
 
-function cardToFile(card) {
-  let ret = "cards/";
-  switch (card.value) {
-    case "A":
-      ret += "ace_of";
-      break;
-    case "2":
-      ret += "2_of";
-      break;
-    case "3":
-      ret += "3_of";
-      break;
-    case "4":
-      ret += "4_of";
-      break;
-    case "5":
-      ret += "5_of";
-      break;
-    case "6":
-      ret += "6_of";
-      break;
-    case "7":
-      ret += "7_of";
-      break;
-    case "8":
-      ret += "8_of";
-      break;
-    case "9":
-      ret += "9_of";
-      break;
-    case "10":
-      ret += "10_of";
-      break;
-    case "J":
-      ret += "jack_of";
-      break;
-    case "Q":
-      ret += "queen_of";
-      break;
-    case "K":
-      ret += "king_of";
-      break;
-    case "B":
-      ret += "black";
-      break;
-    case "R":
-      ret += "red";
-      break;
-  }
-  ret += "_";
-
-  switch (card.suit) {
-		case "S":
-      ret += "spades";
-			break;
-		case "H":
-      ret += "hearts";
-			break;
-		case "D":
-      ret += "diamonds";
-			break;
-		case "C":
-      ret += "clubs";
-			break;
-		case "J":
-      console.log("testing");
-      ret += "joker";
-			break;
-  }
-
-  ret += ".png";
-  return ret;
-}
-
-/* Use if hand has more than 0 cards */
-function handToCommand(hand) {
-  let command = "magick montage ";
-  let handSize = hand.length;
-
-  for (let i = 0; i < handSize; i++) {
-    command += cardToFile(hand[i]);
-    command += " ";
-  }
-  command += `-tile ${handSize}x1 images/hand.png`;
-
-  return command;
-}
-
-async function showHandPNG(hand) {
-  if (hand.length == 0) {
-    return "./cards/empty.png";
-  } else {
-    if (!fs.existsSync("./images")) {
-      await exec("mkdir images", (error, stdout, stderr) => {
-        if (error) {
-          console.log(`ERROR\n${error.message}`);
-          return;
-        }
-        if (stderr) {
-          console.log(`stderr\n${stderr.message}`);
-          return;
-        }
-      });
-    }
-    await exec(handToCommand(hand), (error, stdout, stderr) => {
-      if (error) {
-        console.log(`ERROR\n${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.log(`stderr\n${stderr.message}`);
-        return;
-      }
-    });
-
-    return "./images/hand.png";
-  }
-}
-
 /* old test */
 // let playerList = [p1, p2, p3, p4, p5, p6] = [new Player("1"), new Player("2"), new Player("3"), new Player("4"), new Player("5"), new Player("@varghs")];
 // let fishGame = new Fish(playerList); // obsolete line (Fish now takes channel argument)
@@ -672,6 +546,11 @@ client.on("messageCreate", (message) => {
         case "check":
           fishGame.printTeams();
           break;
+        case "add":
+          let player = new Player(args[1].replace("<@", "").replace(">", ""));
+
+          fishGame.addPlayer(player, Number(args[2]));
+          break;
         case "log":
           switch (args[1]) {
             case "game":
@@ -722,18 +601,11 @@ function makeEmbedPlayerFields() {
   )
 }
 
-function showCards(channel) {
-  const embed = new EmbedBuilder().setColor("Red").setTitle("Click below to view your hand").setDescription(`Please choose your prefered team style in the dropdown!`)
-  const button = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("cards").setLabel("Show Cards!").setStyle(ButtonStyle.Primary))
-  
-  channel.send({embeds:[embed], components:[button]})
-}
-
 function makeStartMenuActionBar() {
   startMenuActionRow = new ActionRowBuilder()
 
   if (random) {
-    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomize").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
+    startMenuActionRow.addComponents(new ButtonBuilder().setCustomId("randomizeTeams").setLabel("Randomize").setStyle(ButtonStyle.Secondary))
   }
 
   if (fishGame.team1.length == 3 && fishGame.team2.length == 3) {
@@ -785,10 +657,10 @@ client.on('interactionCreate', async (interaction) => {
       let sentMessage;
 
       if (startMenuActionRow.components.length > 0) {
-        sentMessage = await interaction.message.channel.send({ embeds: [game], components: [startMenuActionRow] })
+        sentMessage = await interaction.message.channel.send({ embeds: [game], components:[startMenuActionRow]})
       }
       else {
-        sentMessage = await interaction.message.channel.send({ embeds: [game] })
+        sentMessage = await interaction.message.channel.send({ embeds: [game]})
       }
       startMenu = sentMessage;
       if (choice == "Random") {
@@ -803,60 +675,8 @@ client.on('interactionCreate', async (interaction) => {
     case "start":
       fishGame.start()
       break;
-    case "randomize":
-      let players = []
-      fishGame.team1.forEach((player) => {players.push(player)})
-      fishGame.team2.forEach((player) => {players.push(player)})
-      
-      fishGame.team1 = []
-      fishGame.team2 = []
-
-      players.forEach((player) => {putPlayerOnRandomTeam(player)})
-
-      makeEmbedPlayerFields(game)
-      makeStartMenuActionBar()
-
-      if (startMenuActionRow.components.length > 0) {
-        startMenu.edit({ embeds: [game], components: [startMenuActionRow] })
-      }
-      else {
-        startMenu.edit({ embeds: [game] })
-      }
-
-      interaction.deferUpdate("TEST");
-
-      break;
-    case "cards":
-      let p = fishGame.getPlayerFromId(interaction.user.id);
-      let hand = p.hand;
-      interaction.reply({files: [showHandPNG(hand)], ephemeral:true});
-      break;
   }
 });
-
-function putOnRandomTeam(id, username) {
-  let team = Math.floor(Math.random() * 2);
-  let teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
-  if (teamArr.length >= 3) {
-    team = 1 - team;
-  }
-  teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
-  if (teamArr.length <= 2) {
-    fishGame.addPlayer(new Player(id, username), team + 1);
-  }
-}
-
-function putPlayerOnRandomTeam(player) {
-  let team = Math.floor(Math.random() * 2);
-  let teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
-  if (teamArr.length >= 3) {
-    team = 1 - team;
-  }
-  teamArr = team == 0 ? fishGame.team1 : fishGame.team2;
-  if (teamArr.length <= 2) {
-    fishGame.addPlayer(player, team + 1);
-  }
-}
 
 client.on('messageReactionAdd', (reaction, user) => {
   if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
@@ -871,28 +691,31 @@ client.on('messageReactionAdd', (reaction, user) => {
       fishGame.addPlayer(new Player(user.id, user.username), 2);
     }
   }
-  else if (reaction.emoji.name === '🐟') {
-    putOnRandomTeam(user.id, user.username)
-  }
 
   makeEmbedPlayerFields(game)
   makeStartMenuActionBar()
 
   if (startMenuActionRow.components.length > 0) {
-    startMenu.edit({ embeds: [game], components: [startMenuActionRow] })
+    startMenu.edit({ embeds: [game], components:[startMenuActionRow] })
   }
   else {
     startMenu.edit({ embeds: [game] })
   }
+
+  startMenu.edit({ embeds: [game] })
 });
 
 client.on('messageReactionRemove', (reaction, user) => {
   if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
 
-  if (reaction.emoji.name === '1️⃣' || reaction.emoji.name === '2️⃣' || reaction.emoji.name === '2️⃣') {
+  if (reaction.emoji.name === '1️⃣') {
     fishGame.removePlayer(user.id, 1);
-    makeEmbedPlayerFields(game)
   }
+  else if (reaction.emoji.name === '2️⃣') {
+    fishGame.removePlayer(user.id, 2);
+  }
+
+  makeEmbedPlayerFields(game)
 });
 
 client.login(process.env.TOKEN);
