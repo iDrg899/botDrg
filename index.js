@@ -2,7 +2,8 @@ const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Cli
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 
-const startMenus = []
+let startMenu;
+let game;
 
 const client = new Client({
   intents: [
@@ -70,8 +71,9 @@ const SUITS = ["S", "H", "D", "C", "J"];
 const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "B", "R"];
 
 class Player {
-  constructor(id) {
+  constructor(id, username) {
     this.id = id;
+    this.username = username;
     this.hand = [];
   }
 
@@ -99,6 +101,10 @@ class Player {
     }
 
     return false;
+  }
+
+  isEqualTo(id) {
+    return this.id == id
   }
 }
 
@@ -266,18 +272,20 @@ class Deck {
 
 // Beginning of Fish BS
 class Fish {
-  constructor(channel, players) {
+  constructor(channel) {
     this.channel = channel;
     this.isSomebodySupposedToBurnRightNow = false;
     this.burnRecipient = null;
 
     let deck = new Deck(defaultDeckType);
-    this.table = players; // Change this later to customize order
+    this.table = []; // Change this later to customize order
 
-    this.team1 = [this.table[0], this.table[2], this.table[4]];
-    this.team2 = [this.table[1], this.table[3], this.table[5]];
-    this.whoseTurn = this.table[0];
+    this.team1 = [];
+    this.team2 = [];
+    this.whoseTurn = null;
+  }
 
+  start() {
     let dealingIdx = 0;
     while (!deck.isEmpty()) {
       this.table[dealingIdx % 6].hand.push(deck.dealCard());
@@ -290,9 +298,36 @@ class Fish {
   getTeamOf(player) {
     if (this.team1.includes(player)) {
       return 1;
-    } else {
+    } else if (this.team2.includes(player)) {
       return 2;
     }
+    return -1
+  }
+
+  addPlayer(player, team) {
+    if (team == 1) {
+      this.team1.push(player);
+    }
+    else {
+      this.team2.push(player)
+    }
+  }
+
+  removePlayer(id) {
+    for (let i = 0; i < this.team1.length; i++) {
+      if (this.team1[i].isEqualTo(id)) {
+        this.team1.splice(i, 1)
+      }
+    }
+    for (let i = 0; i < this.team2.length; i++) {
+      if (this.team2[i].isEqualTo(id)) {
+        this.team2.splice(i, 1)
+      }
+    }
+  }
+
+  setOrder() {
+
   }
 
   declare(declarer, cardList, playerList) {
@@ -541,9 +576,18 @@ client.on("messageCreate", (message) => {
   }
 })
 
+function makeEmbedPlayerFields() {
+  game = new EmbedBuilder().setColor("Blue").setTitle("New Fish Game").setDescription(`New Fish game starting, react below to reserve a spot`)
+
+  game.addFields(
+    { name: 'Team 1', value: fishGame.team1.length > 0 ? fishGame.team1.map(player => player.username).join('\n') : "None", inline: true },
+    { name: 'Team 2', value: fishGame.team2.length > 0 ? fishGame.team2.map(player => player.username).join('\n') : "None", inline: true },
+  )
+}
+
 client.on('messageReactionAdd', (reaction, user) => {
   const targetMessageId = 'your_message_id';
-  
+
   if (reaction.message.id === targetMessageId && reaction.emoji.name === '👍') {
     console.log(`${user.username} reacted with 👍 on the target message.`);
   }
@@ -585,19 +629,16 @@ client.on('interactionCreate', async (interaction) => {
       break;
     case "teams":
       let choice = interaction.values[0];
-      const game = new EmbedBuilder().setColor("Blue").setTitle("New Fish Game").setDescription(`New Fish game starting, react below to reserve a spot`).setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL()}` })
-      game.addFields(
-        { name: 'Team 1', value: 'Idrg\nJack', inline: true },
-        { name: 'Team 2', value: 'Bawn\nShawn\nLol', inline: true },
-      )
+      fishGame = new Fish(interaction.message.channel);          // idk if this fish game is accessible to other commands lol
 
-      startMenus.push(game);
+      makeEmbedPlayerFields(game)
 
       const sentMessage = await interaction.message.channel.send({ embeds: [game] })
+      startMenu = sentMessage;
       if (choice == "Random") {
         await sentMessage.react("🐟")
       }
-      else {        
+      else {
         await sentMessage.react("1️⃣");
         await sentMessage.react("2️⃣");
       }
@@ -606,21 +647,36 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-function findStartMenuID(id) {
-  startMenus.forEach((menu) => {
-    if (menu.id == id) {
-      return true;
-    }
-  })
-  return false;
-}
-
 client.on('messageReactionAdd', (reaction, user) => {
-  if (!findStartMenuID(reaction.message.id) && user.id != reaction.message.author.id)
+  if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
 
   if (reaction.emoji.name === '1️⃣') {
-    console.log(`${user.username} reacted with 👍 on the target message.`);
+    if (fishGame.team1.length < 2) {
+      fishGame.addPlayer(new Player(user.id, user.username), 1);
+    }
   }
+  else if (reaction.emoji.name === '2️⃣') {
+    if (fishGame.team2.length < 2) {
+      fishGame.addPlayer(new Player(user.id, user.username), 2);
+    }
+  }
+
+  makeEmbedPlayerFields(game)
+  startMenu.edit({ embeds: [game] })
+});
+
+client.on('messageReactionRemove', (reaction, user) => {
+  if (startMenu.id != reaction.message.id || user.id == reaction.message.author.id) { return }
+
+  if (reaction.emoji.name === '1️⃣') {
+    fishGame.removePlayer(user.id, 1);
+  }
+  else if (reaction.emoji.name === '2️⃣') {
+    fishGame.removePlayer(user.id, 2);
+  }
+
+  makeEmbedPlayerFields(game)
+  startMenu.edit({ embeds: [game] })
 });
 
 client.login(process.env.TOKEN);
