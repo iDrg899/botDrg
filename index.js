@@ -829,7 +829,8 @@ client.on('interactionCreate', async (interaction) => {
     case "cards":
       let p = fishGame.getPlayerFromId(interaction.user.id);
       let hand = p.hand;
-      interaction.reply({files: [showHandPNG(hand)], ephemeral:true});
+      console.log(p.hand);
+      interaction.reply({files: [await showHandPNG(hand)], ephemeral:true});
       break;
   }
 });
