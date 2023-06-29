@@ -547,7 +547,7 @@ client.on("messageCreate", (message) => {
           fishGame.printTeams();
           break;
         case "add":
-          let player = new Player(args[1].replace("<@", "").replace(">", ""));
+          let player = new Player(args[1].replace("<@", "").replace(">", ""), client.users.cache.get(args[1].replace("<@", "").replace(">", "")).username);
 
           fishGame.addPlayer(player, Number(args[2]));
           break;
@@ -703,10 +703,6 @@ client.on('interactionCreate', async (interaction) => {
       let hand = p.hand;
       console.log(p.hand);
       interaction.reply({files: [await showHandPNG(hand)], ephemeral:true});
-      // let p = fishGame.getPlayerFromId(interaction.user.id);
-      // let hand = p.hand;
-
-      interaction.reply({files: [attachment], ephemeral:true});
       break;
   }
 });
