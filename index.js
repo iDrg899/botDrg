@@ -405,7 +405,7 @@ class Fish {
     }
   }
 
-  burn(giver, card) {
+  async burn(giver, card) {
     if (giver !== this.whoseTurn) {
       this.channel.send(`<@${giver.id}> It's not your turn. It's <@${this.whoseTurn.id}>'s turn.`);
       return;
@@ -427,13 +427,16 @@ class Fish {
 
     giver.remove(card);
     this.burnRecipient.hand.push(card);
-    this.channel.send(`<@${giver.id}> burned the ${card.getName()} to <@${this.burnRecipient.id}>.`);
+    let message = this.channel.send(`<@${giver.id}> burned the ${card.getName()} to <@${this.burnRecipient.id}>.`);
     this.isSomebodySupposedToBurnRightNow = false;
     this.whoseTurn = this.burnRecipient;
     this.burnRecipient = null;
+
+    await wait(5000);
+    message.delete();
   }
 
-  ask(asker, asked, card) {
+  async ask(asker, asked, card) {
     if (this.isSomebodySupposedToBurnRightNow) {
       this.channel.send(`<@${asker.id}> That's not a burn, silly! BURN!!! (-fish burn <card>)`);
       return;
@@ -473,15 +476,20 @@ class Fish {
 
     let removalSuccess = asked.remove(card);
 
+    let message;
+
     if (removalSuccess == "successful removal") {
       asker.hand.push(card);
       console.log("successful ask");
-      this.channel.send(`<@${asker.id}> successfully asked <@${asked.id}> for the ${card.getName()}.`);
+      message = this.channel.send(`<@${asker.id}> successfully asked <@${asked.id}> for the ${card.getName()}.`);
     } else {
       console.log("you should've asked nicely.");
       this.whoseTurn = asked;
-      this.channel.send(`<@${asker.id}> unsuccessfully asked <@${asked.id}> for the ${card.getName()}.`);
+      message = this.channel.send(`<@${asker.id}> unsuccessfully asked <@${asked.id}> for the ${card.getName()}.`);
     }
+
+    await wait(5000);
+    message.delete();
   }
 
   printTeams() {
@@ -700,12 +708,12 @@ client.on("messageCreate", (message) => {
           let asker = fishGame.getPlayerFromId(message.author.id);
           let asked = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
           fishGame.ask(asker, asked, new Card(args[3], args[2])); // TODO change from Jack of Spades to actual card
-
+          message.delete();
           break;
         case "burn":
           let giver = fishGame.getPlayerFromId(message.author.id);
           fishGame.burn(giver, new Card(args[2], args[1]));
-
+          message.delete();
           break;
       }
       break;
@@ -834,13 +842,10 @@ client.on('interactionCreate', async (interaction) => {
       break;
     case "cards":
       let p = fishGame.getPlayerFromId(interaction.user.id);
+      console.log("ID: "+interaction.user.id)
       let hand = p.hand;
-      try {
-        await showHandPNG(hand, interaction.user.id);
-      } catch (error) {
-        console.error(error);
-      }
-      interaction.reply({files: [await showHandPNG(hand)], ephemeral:true});
+      let cards = await showHandPNG(hand, interaction.user.id)
+      interaction.reply({files: [cards], ephemeral:true});
       break;
   }
 });
