@@ -1,4 +1,4 @@
-const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, AttachmentBuilder, MessageAttachment, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 const { exec } = require("child_process");
@@ -672,6 +672,11 @@ client.on("messageCreate", (message) => {
         case "check":
           fishGame.printTeams();
           break;
+        case "add":
+          let player = new Player(args[1].replace("<@", "").replace(">", ""), client.users.cache.get(args[1].replace("<@", "").replace(">", "")).username);
+
+          fishGame.addPlayer(player, Number(args[2]));
+          break;
         case "log":
           switch (args[1]) {
             case "game":
@@ -827,12 +832,9 @@ client.on('interactionCreate', async (interaction) => {
 
       break;
     case "cards":
-      // let p = fishGame.getPlayerFromId(interaction.user.id);
-      // let hand = p.hand;
-
-      const attachment = new AttachmentBuilder('C:/Users/jack1/Documents/Coding/Projects/botDrg/cards/2_of_clubs.png', { name: 'card.png' })
-
-      interaction.reply({files: [attachment], ephemeral:true});
+      let p = fishGame.getPlayerFromId(interaction.user.id);
+      let hand = p.hand;
+      interaction.reply({files: [showHandPNG(hand)], ephemeral:true});
       break;
   }
 });
