@@ -590,7 +590,7 @@ function handToCommand(hand) {
   return command;
 }
 
-async function showHandPNG(hand) {
+async function showHandPNG(hand, id) {
   if (hand.length == 0) {
     return "./cards/empty.png";
   } else {
@@ -618,7 +618,7 @@ async function showHandPNG(hand) {
       }
     });
 
-    return "./images/hand.png";
+    return `./images/${id}.png`;
   }
 }
 
@@ -836,7 +836,7 @@ client.on('interactionCreate', async (interaction) => {
       let p = fishGame.getPlayerFromId(interaction.user.id);
       let hand = p.hand;
       try {
-        await showHandPNG(hand);
+        await showHandPNG(hand, interaction.user.id);
       } catch (error) {
         console.error(error);
       }
