@@ -615,6 +615,7 @@ async function showHandPNG(hand) {
       });
     }
     await exec(handToCommand(hand), (error, stdout, stderr) => {
+      console.log("what the what");
       if (error) {
         console.log(`ERROR\n${error.message}`);
         return;
@@ -842,7 +843,12 @@ client.on('interactionCreate', async (interaction) => {
     case "cards":
       let p = fishGame.getPlayerFromId(interaction.user.id);
       let hand = p.hand;
-      interaction.reply({files: [showHandPNG(hand)], ephemeral:true});
+      try {
+        await showHandPNG(hand);
+      } catch (error) {
+        console.error(error);
+      }
+      interaction.reply({files: [await showHandPNG(hand)], ephemeral:true});
       break;
   }
 });
