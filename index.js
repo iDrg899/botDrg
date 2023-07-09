@@ -842,13 +842,10 @@ client.on('interactionCreate', async (interaction) => {
       break;
     case "cards":
       let p = fishGame.getPlayerFromId(interaction.user.id);
+      console.log("ID: "+interaction.user.id)
       let hand = p.hand;
-      try {
-        await showHandPNG(hand);
-      } catch (error) {
-        console.error(error);
-      }
-      interaction.reply({files: [await showHandPNG(hand)], ephemeral:true});
+      let cards = await showHandPNG(hand)
+      interaction.reply({files: [cards], ephemeral:true});
       break;
   }
 });
