@@ -707,13 +707,30 @@ client.on("messageCreate", (message) => {
         case "ask":
           let asker = fishGame.getPlayerFromId(message.author.id);
           let asked = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
-          fishGame.ask(asker, asked, new Card(args[3], args[2])); // TODO change from Jack of Spades to actual card
+          let card = new Card(args[3], args[2]);
+          fishGame.ask(asker, asked, card);
           message.delete();
+          break;
+        case "forceask":
+          asker = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          asked = fishGame.getPlayerFromId(args[2].replace("<@", "").replace(">", ""));
+          card = new Card(args[4], args[3]);
+          fishGame.ask(asker, asked, card);
+          message.delete();
+          console.log(`${message.author.getName} forced ${asker.getName} to ask ${asked.getName} for the ${card.getName}`);
           break;
         case "burn":
           let giver = fishGame.getPlayerFromId(message.author.id);
-          fishGame.burn(giver, new Card(args[2], args[1]));
+          card = new Card(args[2], args[1]);
+          fishGame.burn(giver, card);
           message.delete();
+          break;
+        case "forceburn":
+          giver = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          card = new Card(args[3], args[2]);
+          fishGame.burn(giver, card);
+          message.delete();
+          console.log(`${message.author.getName} forced ${giver.getName} to burn the ${card.getName}`);
           break;
       }
       break;
