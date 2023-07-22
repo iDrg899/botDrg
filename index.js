@@ -403,6 +403,23 @@ class Fish {
     } else {
       this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = this.getTeamOf(declarer);
     }
+
+    this.checkWin();
+  }
+
+  checkWin() {
+    let theNumberOfHalfSuitsNeededToWin = (9 - this.halfSuitStatus.filter(x => x==-1).length) / 2 + 1;
+
+    if (this.halfSuitStatus.filter(x => x==1).length >= theNumberOfHalfSuitsNeededToWin) {
+      this.win(1);
+    }
+    if (this.halfSuitStatus.filter(x => x==2).length >= theNumberOfHalfSuitsNeededToWin) {
+      this.win(2);
+    }
+  }
+
+  win(team) {
+    this.channel.send(`Team ${team} p much wins.`);
   }
 
   async burn(giver, card) {
