@@ -1,4 +1,4 @@
-const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { Discord, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Client, Collection, messageLink, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PartialWebhookMixin } = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 require("dotenv").config()
 const { exec } = require("child_process");
@@ -585,7 +585,7 @@ function cardToFile(card) {
 }
 
 /* Use if hand has more than 0 cards */
-function handToCommand(hand) {
+function handToCommand(hand, id) {
   let command = "magick montage ";
   let handSize = hand.length;
 
@@ -593,7 +593,7 @@ function handToCommand(hand) {
     command += cardToFile(hand[i]);
     command += " ";
   }
-  command += `-tile ${handSize}x1 images/hand.png`;
+  command += `-tile ${handSize}x1 images/${id}.png`;
 
   return command;
 }
@@ -614,7 +614,7 @@ async function showHandPNG(hand, id) {
         }
       });
     }
-    await exec(handToCommand(hand), (error, stdout, stderr) => {
+    await exec(handToCommand(hand, id), (error, stdout, stderr) => {
       console.log("what the what");
       if (error) {
         console.log(`ERROR\n${error.message}`);
@@ -844,8 +844,12 @@ client.on('interactionCreate', async (interaction) => {
       let p = fishGame.getPlayerFromId(interaction.user.id);
       console.log("ID: "+interaction.user.id)
       let hand = p.hand;
-      let cards = await showHandPNG(hand, interaction.user.id)
-      interaction.reply({files: [cards], ephemeral:true});
+      try {
+        await showHandPNG(hand, interaction.user.id);
+        interaction.reply({files: [await showHandPNG(hand, interaction.user.id)], ephemeral:true});
+      } catch (error) {
+        console.log(error);
+      }
       break;
   }
 });
