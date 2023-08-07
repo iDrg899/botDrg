@@ -403,6 +403,23 @@ class Fish {
     } else {
       this.halfSuitStatus[indexOfArrayInArray(HALFSUITS, cardList)] = this.getTeamOf(declarer);
     }
+
+    this.checkWin();
+  }
+
+  checkWin() {
+    let theNumberOfHalfSuitsNeededToWin = (9 - this.halfSuitStatus.filter(x => x==-1).length) / 2 + 1;
+
+    if (this.halfSuitStatus.filter(x => x==1).length >= theNumberOfHalfSuitsNeededToWin) {
+      this.win(1);
+    }
+    if (this.halfSuitStatus.filter(x => x==2).length >= theNumberOfHalfSuitsNeededToWin) {
+      this.win(2);
+    }
+  }
+
+  win(team) {
+    this.channel.send(`Team ${team} p much wins.`);
   }
 
   async burn(giver, card) {
@@ -686,6 +703,18 @@ client.on("messageCreate", (message) => {
 
           fishGame.addPlayer(player, Number(args[2]));
           break;
+        case "adddrg":
+          /**
+           * Adds two iDrg alts to team 1 and three to team 2.
+           */
+
+          fishGame.addPlayer(new Player("737140151033266247", "idrg2"), 1);
+          fishGame.addPlayer(new Player("846562460592898109", "idrg3"), 1);
+          fishGame.addPlayer(new Player("850363710018289705", "idrg4"), 2);
+          fishGame.addPlayer(new Player("850514419456147548", "idrg5"), 2);
+          fishGame.addPlayer(new Player("917149978705666088", "idrg6"), 2);
+
+          break;
         case "log":
           switch (args[1]) {
             case "game":
@@ -705,15 +734,32 @@ client.on("messageCreate", (message) => {
           }
           break;
         case "ask":
-          let asker = fishGame.getPlayerFromId(message.author.id);
-          let asked = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
-          fishGame.ask(asker, asked, new Card(args[3], args[2])); // TODO change from Jack of Spades to actual card
+          var asker = fishGame.getPlayerFromId(message.author.id);
+          var asked = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          var card = new Card(args[3], args[2]);
+          fishGame.ask(asker, asked, card);
           message.delete();
           break;
-        case "burn":
-          let giver = fishGame.getPlayerFromId(message.author.id);
-          fishGame.burn(giver, new Card(args[2], args[1]));
+        case "forceask":
+          var asker = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          var asked = fishGame.getPlayerFromId(args[2].replace("<@", "").replace(">", ""));
+          var card = new Card(args[4], args[3]);
+          fishGame.ask(asker, asked, card);
           message.delete();
+          console.log(`${message.author.username} forced ${asker.username} to ask ${asked.username} for the ${card.getName()}`);
+          break;
+        case "burn":
+          var giver = fishGame.getPlayerFromId(message.author.id);
+          var card = new Card(args[2], args[1]);
+          fishGame.burn(giver, card);
+          message.delete();
+          break;
+        case "forceburn":
+          var giver = fishGame.getPlayerFromId(args[1].replace("<@", "").replace(">", ""));
+          var card = new Card(args[3], args[2]);
+          fishGame.burn(giver, card);
+          message.delete();
+          console.log(`${message.author.username} forced ${giver.username} to burn the ${card.getName()}`);
           break;
       }
       break;
